@@ -99,11 +99,13 @@ WINEPREFIX="$HOME/.local/share/Steam/steamapps/compatdata/3240220/pfx" winetrick
 
 ### 5. Install ReShade + DLSS 5 (`renodx-dlss5.addon64`)
 Place the following files in the GTA V Enhanced root directory (next to `GTA5_Enhanced.exe`):
-1. **`dxgi.dll`** — ReShade 6.8+ **with Add-on support** (`ReShade_Setup_6.8.0_Addon.exe`, extract/rename `ReShade64.dll` → `dxgi.dll`).
-2. **`renodx-dlss5.addon64`** — RenoDX DLSS 5 Addon (`renodx-dlss5_10.8.0.zip` from the RenoDX DLSS 5 release).
-3. **`nvngx_dlssnr.dll`** — NVIDIA's signed Neural Rendering runtime (`nvngx_dlssnr_310.8.SF-v2.zip`, e.g. `310.8.2.0` from NVIDIA Streamline/DLSS 5 SDK or automatically fetched by **DLSS5 OneClick**).
+1. **`dxgi.dll`** — **ReShade 6.8+ with Add-on support** from [reshade.me](https://reshade.me/) (`ReShade_Setup_*_Addon.exe`, extract/rename `ReShade64.dll` → `dxgi.dll`).
+2. **`renodx-dlss5.addon64`** — **RenoDX DLSS 5 Add-on** (from the RenoDX / DLSS 5 releases, see [clshortfuse/renodx](https://github.com/clshortfuse/renodx)).
+3. **`nvngx_dlssnr.dll`** — **NVIDIA's official signed DLSS Neural Rendering runtime** (e.g. `310.8.2.0` from NVIDIA's DLSS 5 / Streamline runtime package).
 
-> **Tip:** If you use **DLSS5 OneClick**, it automatically downloads these packages into `~/.cache/dlss5oneclick/downloads/` and installs `dxgi.dll`, `renodx-dlss5.addon64`, and `nvngx_dlssnr.dll` for you.
+> **Automated option ([DLSS5oneclick](https://github.com/faisalkindi/DLSS5oneclick) / [DLSS5oneclick-forlinux](https://github.com/Mhsbrian/DLSS5oneclick-forlinux)):**
+> `DLSS5oneclick` is an open-source installer (not a custom DLL) that automatically fetches the official ReShade Add-on build, `renodx-dlss5.addon64`, and NVIDIA's signed `nvngx_dlssnr.dll` into your game folder (cached under `~/.cache/dlss5oneclick/downloads/`).
+>
 > **Important:** Do **not** overwrite AuraV's `nvngx_dlssd.dll` — both `nvngx_dlssd.dll` (AuraV) and `nvngx_dlssnr.dll` (DLSS 5) must sit side-by-side in the game root.
 
 Optionally copy [`configs/ReShade.ini`](configs/ReShade.ini) and [`configs/AuraV.ini`](configs/AuraV.ini) as starting presets (adjust `IntermediateCachePath` in `ReShade.ini` if needed).
