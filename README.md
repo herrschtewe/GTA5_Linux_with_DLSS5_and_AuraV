@@ -80,21 +80,31 @@ Copy the resulting `cabinet.dll` into the GTA V Enhanced root directory.
 
 ---
 
-### 4. Copy Windows Fonts into the Proton Prefix
-To allow DirectWrite (`DWrite.dll`) to render AuraV's F10 Dock UI, copy standard Windows TrueType fonts (`arial.ttf`, `segoeui.ttf`, `tahoma.ttf`, `verdana.ttf`, `consola.ttf`, etc. — e.g. from a Windows installation or `winetricks corefonts`) into the prefix Fonts directory:
-```text
-<SteamLibrary>/steamapps/compatdata/3240220/pfx/drive_c/windows/Fonts/
+### 4. Install Windows Fonts into the Proton Prefix
+To allow DirectWrite (`DWrite.dll`) to render AuraV's F10 Dock UI, install Microsoft Core Fonts into the GTA V Enhanced Proton prefix (App ID `3240220`):
+
+Using **protontricks** (recommended):
+```bash
+protontricks 3240220 -q corefonts
 ```
+
+Or using **winetricks** directly (adjust the path if your Steam library is on another drive):
+```bash
+WINEPREFIX="$HOME/.local/share/Steam/steamapps/compatdata/3240220/pfx" winetricks -q corefonts
+```
+
+*(Optionally, you can also copy `segoeui.ttf` / `segoeuib.ttf` from a Windows installation into `<SteamLibrary>/steamapps/compatdata/3240220/pfx/drive_c/windows/Fonts/`.)*
 
 ---
 
 ### 5. Install ReShade + DLSS 5 (`renodx-dlss5.addon64`)
 Place the following files in the GTA V Enhanced root directory (next to `GTA5_Enhanced.exe`):
-1. **ReShade (with Addon support)** as `dxgi.dll`
-2. **RenoDX DLSS 5 Addon:** `renodx-dlss5.addon64`
-3. **NVIDIA Neural Rendering Runtime:** `nvngx_dlssnr.dll` (e.g. `310.8.2.0` / from the DLSS5 OneClick cache)
+1. **`dxgi.dll`** — ReShade 6.8+ **with Add-on support** (`ReShade_Setup_6.8.0_Addon.exe`, extract/rename `ReShade64.dll` → `dxgi.dll`).
+2. **`renodx-dlss5.addon64`** — RenoDX DLSS 5 Addon (`renodx-dlss5_10.8.0.zip` from the RenoDX DLSS 5 release).
+3. **`nvngx_dlssnr.dll`** — NVIDIA's signed Neural Rendering runtime (`nvngx_dlssnr_310.8.SF-v2.zip`, e.g. `310.8.2.0` from NVIDIA Streamline/DLSS 5 SDK or automatically fetched by **DLSS5 OneClick**).
 
-> **Important:** Both `nvngx_dlssd.dll` (AuraV) and `nvngx_dlssnr.dll` (DLSS 5) must sit side-by-side in the game root.
+> **Tip:** If you use **DLSS5 OneClick**, it automatically downloads these packages into `~/.cache/dlss5oneclick/downloads/` and installs `dxgi.dll`, `renodx-dlss5.addon64`, and `nvngx_dlssnr.dll` for you.
+> **Important:** Do **not** overwrite AuraV's `nvngx_dlssd.dll` — both `nvngx_dlssd.dll` (AuraV) and `nvngx_dlssnr.dll` (DLSS 5) must sit side-by-side in the game root.
 
 Optionally copy [`configs/ReShade.ini`](configs/ReShade.ini) and [`configs/AuraV.ini`](configs/AuraV.ini) as starting presets (adjust `IntermediateCachePath` in `ReShade.ini` if needed).
 
