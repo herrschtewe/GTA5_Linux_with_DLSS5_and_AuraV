@@ -1,156 +1,156 @@
-# GTA V Enhanced unter Linux mit AuraV (Path Tracing) & DLSS 5 (Neural Rendering)
+# GTA V Enhanced on Linux with AuraV (Path Tracing) & DLSS 5 (Neural Rendering)
 
-Vollständige Anleitung und benötigte Dateien, um **GTA V Enhanced** unter Linux (Nobara / Fedora / SteamOS / Ubuntu) über **Proton / GE-Proton** gleichzeitig mit **AuraV (Path Tracing + F10-Dock)** und **ReShade + RenoDX DLSS 5 Neural Rendering** stabil zum Laufen zu bringen.
+Complete guide and required files to run **Grand Theft Auto V Enhanced** on Linux (Nobara / Fedora / SteamOS / Ubuntu) via **Proton / GE-Proton** with both **AuraV (Path Tracing + F10 Dock)** and **ReShade + RenoDX DLSS 5 Neural Rendering** working side-by-side.
 
-Getestet auf:
+Tested on:
 - **OS:** Nobara Linux (Wayland / KDE)
-- **GPU:** NVIDIA GeForce RTX 4090 (Treiber 560+ / aktuell)
+- **GPU:** NVIDIA GeForce RTX 4090 (driver 560+ / current)
 - **Proton:** GE-Proton 11-12
 - **Mods:** AuraV Lite 0.3.2, ReShade 6.8 + `renodx-dlss5.addon64` (`DLSSNR 310.8.2.0`)
 
 ---
 
-## Warum funktioniert das ohne Anpassungen unter Linux nicht?
+## Why This Doesn't Work Out of the Box on Linux
 
-1. **Fehlende Windows Compression API in Wine/Proton (`cabinet.dll`):**
-   - `AuraV.asi` entpackt seine Shader-Datenbank (`AuraV.bank`, >20.000 Shader) über `cabinet.dll` (`CreateDecompressor` / `Decompress` / `CloseDecompressor`) mit Algorithmus `4` (`COMPRESS_ALGORITHM_XPRESS_HUFF`) inklusive 28-Byte-Windows-Buffer-Header.
-   - Wine/Proton implementiert in `cabinet.dll` nur die alte FCI/FDI-API und in `ntdll.dll` kein Format `4` (`RtlGetCompressionWorkSpaceSize`).
-   - **Folge ohne Fix:** `path tracing failed to start`, F10 zeigt nur den Mauszeiger oder das Spiel stürzt beim Laden der Welt mit einer Null-Pointer-Exception ab.
-   - **Lösung in diesem Repo:** Eine eigene `cabinet.dll` ([`cabinet-proxy/`](cabinet-proxy/)), die auf der Microsoft-XPRESS-Huffman-Referenzimplementierung (`pyxca`) basiert (inkl. Fix für eine Endlosschleife beim Überlappungs-Kopieren am Blockende und automatischer 28-Byte-Header-Erkennung).
-2. **Fehlende Windows-Schriftarten (`DWrite.dll`):**
-   - Ohne Standard-TrueType-Schriftarten (`arial.ttf`, `segoeui.ttf`, etc.) im Proton-Prefix schlägt DirectWrite beim Rendern des AuraV-F10-Docks fehl.
-3. **Getrennte NVIDIA-DLLs für AuraV & DLSS 5:**
-   - **AuraV** benötigt seine eigene `nvngx_dlssd.dll` (Ray Reconstruction, v310.9.0) für die Streamline-Signaturprüfung.
-   - **DLSS 5** (`renodx-dlss5.addon64`) benötigt zusätzlich die signierte `nvngx_dlssnr.dll` (Neural Rendering) direkt im Spielverzeichnis.
-4. **Wine DLL-Overrides & VKD3D-Proton Flags:**
-   - Sowohl ReShade (`dxgi.dll`) als auch `cabinet.dll`, `msdmo.dll`, `d3dcompiler_47.dll` und `nvngx` müssen über `WINEDLLOVERRIDES` geladen werden.
+1. **Missing Windows Compression API in Wine/Proton (`cabinet.dll`):**
+   - `AuraV.asi` decompresses its shader bank (`AuraV.bank`, >20,000 shaders) via `cabinet.dll` (`CreateDecompressor` / `Decompress` / `CloseDecompressor`) using algorithm `4` (`COMPRESS_ALGORITHM_XPRESS_HUFF`) with a 28-byte Windows Compression API buffer header.
+   - Wine/Proton's built-in `cabinet.dll` only implements the legacy FCI/FDI API, and Wine's `ntdll.dll` does not implement format `4` in `RtlGetCompressionWorkSpaceSize`.
+   - **Result without fix:** `path tracing failed to start`, pressing `F10` only unhides the mouse cursor without rendering the Dock, or the game crashes on world load with a null-pointer access violation.
+   - **Fix in this repo:** A custom `cabinet.dll` ([`cabinet-proxy/`](cabinet-proxy/)) built on Microsoft's reference XPRESS Huffman implementation (`pyxca`), including a fix for an infinite loop during overlapping match copies near block ends and automatic 28-byte header skipping.
+2. **Missing Windows Fonts (`DWrite.dll`):**
+   - Without standard Windows TrueType fonts (`arial.ttf`, `segoeui.ttf`, etc.) in the Proton prefix, DirectWrite fails when rendering AuraV's F10 Dock UI.
+3. **Separate NVIDIA DLLs for AuraV & DLSS 5:**
+   - **AuraV** requires its bundled `nvngx_dlssd.dll` (Ray Reconstruction, v310.9.0) to pass Streamline's signature check.
+   - **DLSS 5** (`renodx-dlss5.addon64`) additionally requires the signed `nvngx_dlssnr.dll` (Neural Rendering) next to `GTA5_Enhanced.exe`.
+4. **Wine DLL Overrides & VKD3D-Proton Flags:**
+   - ReShade (`dxgi.dll`), `cabinet.dll`, `msdmo.dll`, `d3dcompiler_47.dll`, and `nvngx` all need explicit `WINEDLLOVERRIDES` entries.
 
 ---
 
-## Repository-Inhalt
+## Repository Contents
 
 - [`cabinet-proxy/`](cabinet-proxy/)
-  - `cabinet.dll` – vorkompilierte 64-Bit-Windows-DLL für Proton/Wine
-  - `my_cabinet_ms.c`, `pyxca_xpress.c`, `xpress.h`, `cabinet.def` – vollständiger Quellcode
-  - `build.sh` – Build-Skript zum Selbstkompilieren unter Linux (`gcc` + `ld -m i386pep`)
+  - `cabinet.dll` – prebuilt 64-bit Windows DLL for Proton/Wine
+  - `my_cabinet_ms.c`, `pyxca_xpress.c`, `xpress.h`, `cabinet.def` – full source code
+  - `build.sh` – build script to compile from source on Linux (`gcc` + `ld -m i386pep`)
 - [`configs/`](configs/)
-  - `AuraV.ini` – getestete Beispielkonfiguration für AuraV
-  - `ReShade.ini` – getestete Beispielkonfiguration für ReShade + `[RenoDX.DLSS5]`
+  - `AuraV.ini` – tested reference config for AuraV
+  - `ReShade.ini` – tested reference config for ReShade + `[RenoDX.DLSS5]`
 
 ---
 
-## Schritt-für-Schritt-Anleitung
+## Step-by-Step Setup
 
-### 1. Voraussetzungen
-- Aktueller proprietärer **NVIDIA-Treiber** (Serie 560+ oder neuer).
-- **GE-Proton** (z. B. `GE-Proton11-12`) in Steam für *Grand Theft Auto V Enhanced* (App-ID `3240220`) ausgewählt.
-- Das Spiel einmal normal starten, bis ins Grafikmenü gehen und aktivieren:
-  - **NVIDIA DLSS** (z. B. *Quality*)
-  - **Raytracing** (Raytraced Global Illumination, Shadows, Reflections)
-- **Hinweis:** AuraV funktioniert nur im **Story-Modus** (BattlEye für Mods über Startoption `-nobattleye` deaktiviert).
+### 1. Prerequisites
+- Up-to-date proprietary **NVIDIA driver** (560+ or newer).
+- **GE-Proton** (e.g. `GE-Proton11-12`) selected in Steam for *Grand Theft Auto V Enhanced* (App ID `3240220`).
+- Launch the game once normally and enable in the in-game Graphics settings:
+  - **NVIDIA DLSS** (e.g. *Quality*)
+  - **Ray Tracing** (Raytraced Global Illumination, Shadows, Reflections)
+- **Note:** AuraV only works in **Story Mode** (launch with `-nobattleye` to disable BattlEye for mods).
 
 ---
 
-### 2. AuraV installieren
-Entpacke das AuraV-Archiv direkt in das Hauptverzeichnis von GTA V Enhanced (neben `GTA5_Enhanced.exe`), z. B.:
+### 2. Install AuraV
+Extract the AuraV archive into the GTA V Enhanced root directory (next to `GTA5_Enhanced.exe`), e.g.:
 `~/.local/share/Steam/steamapps/common/Grand Theft Auto V Enhanced/`
 
-Dort müssen liegen:
+Make sure these files are present:
 - `AuraV.asi`
 - `msdmo.dll`
-- `AuraV/` (mit `AuraV.bank` und `AuraV.ini`)
-- `nvngx_dlssd.dll` (**wichtig:** die originale `nvngx_dlssd.dll` aus dem AuraV-Paket verwenden, nicht durch fremde Versionen überschreiben!)
+- `AuraV/` (containing `AuraV.bank` and `AuraV.ini`)
+- `nvngx_dlssd.dll` (**important:** keep the original `nvngx_dlssd.dll` shipped with AuraV; do not overwrite it with a different version!)
 
 ---
 
-### 3. `cabinet.dll` Proxy installieren (oder selbst bauen)
+### 3. Install (or Build) the `cabinet.dll` Proxy
 
-**Variante A – Vorkompilierte DLL nutzen:**
-Kopiere `cabinet-proxy/cabinet.dll` direkt ins Hauptverzeichnis von GTA V Enhanced (neben `GTA5_Enhanced.exe`).
+**Option A – Use the prebuilt DLL:**
+Copy `cabinet-proxy/cabinet.dll` directly into the GTA V Enhanced root directory (next to `GTA5_Enhanced.exe`).
 
-**Variante B – Selbst kompilieren:**
-Benötigt `gcc`, `binutils` (`ld`, `objcopy`) und eine Wine-Installation mit `x86_64-windows/libkernel32.a`:
+**Option B – Build from source:**
+Requires `gcc`, `binutils` (`ld`, `objcopy`), and a Wine installation containing `x86_64-windows/libkernel32.a`:
 ```bash
 cd cabinet-proxy
 ./build.sh
-# Optional mit Debug-Log (schreibt cabinet_proxy.log ins Spielverzeichnis):
+# Optional: enable debug logging to cabinet_proxy.log in the game folder:
 # DEBUG_LOG=1 ./build.sh
 ```
-Kopiere die erzeugte `cabinet.dll` anschließend ins Hauptverzeichnis von GTA V Enhanced.
+Copy the resulting `cabinet.dll` into the GTA V Enhanced root directory.
 
 ---
 
-### 4. Windows-Schriftarten in das Proton-Prefix kopieren
-Damit DirectWrite (`DWrite.dll`) das F10-Menü von AuraV sauber rendern kann, kopiere Standard-Windows-Schriftarten (`arial.ttf`, `segoeui.ttf`, `tahoma.ttf`, `verdana.ttf`, `consola.ttf` usw. – z. B. von einer Windows-Installation oder über `winetricks corefonts`) in das Fonts-Verzeichnis des GTA-V-Prefix:
+### 4. Copy Windows Fonts into the Proton Prefix
+To allow DirectWrite (`DWrite.dll`) to render AuraV's F10 Dock UI, copy standard Windows TrueType fonts (`arial.ttf`, `segoeui.ttf`, `tahoma.ttf`, `verdana.ttf`, `consola.ttf`, etc. — e.g. from a Windows installation or `winetricks corefonts`) into the prefix Fonts directory:
 ```text
 <SteamLibrary>/steamapps/compatdata/3240220/pfx/drive_c/windows/Fonts/
 ```
 
 ---
 
-### 5. ReShade + DLSS 5 (`renodx-dlss5.addon64`) installieren
-Lege folgende Dateien ebenfalls ins Hauptverzeichnis von GTA V Enhanced (neben `GTA5_Enhanced.exe`):
-1. **ReShade (mit Addon-Support)** als `dxgi.dll`
+### 5. Install ReShade + DLSS 5 (`renodx-dlss5.addon64`)
+Place the following files in the GTA V Enhanced root directory (next to `GTA5_Enhanced.exe`):
+1. **ReShade (with Addon support)** as `dxgi.dll`
 2. **RenoDX DLSS 5 Addon:** `renodx-dlss5.addon64`
-3. **NVIDIA Neural Rendering Runtime:** `nvngx_dlssnr.dll` (z. B. `310.8.2.0` / aus dem DLSS5-OneClick-Cache)
+3. **NVIDIA Neural Rendering Runtime:** `nvngx_dlssnr.dll` (e.g. `310.8.2.0` / from the DLSS5 OneClick cache)
 
-> **Wichtig:** `nvngx_dlssd.dll` (AuraV) und `nvngx_dlssnr.dll` (DLSS 5) bleiben beide nebeneinander im Spielverzeichnis liegen.
+> **Important:** Both `nvngx_dlssd.dll` (AuraV) and `nvngx_dlssnr.dll` (DLSS 5) must sit side-by-side in the game root.
 
-Optional kannst du [`configs/ReShade.ini`](configs/ReShade.ini) und [`configs/AuraV.ini`](configs/AuraV.ini) als Vorlage übernehmen (ggf. `IntermediateCachePath` in `ReShade.ini` anpassen).
+Optionally copy [`configs/ReShade.ini`](configs/ReShade.ini) and [`configs/AuraV.ini`](configs/AuraV.ini) as starting presets (adjust `IntermediateCachePath` in `ReShade.ini` if needed).
 
 ---
 
-### 6. Steam-Startoptionen setzen
-Trage in Steam unter *Eigenschaften → Allgemein → Startoptionen* für GTA V Enhanced ein:
+### 6. Set Steam Launch Options
+In Steam → *Properties → General → Launch Options*, set:
 
 ```bash
 DISABLE_LSFGVK=1 DISABLE_VKBASALT=1 VK_LOADER_LAYERS_DISABLE="*lsfg*,*vkbasalt*" VKD3D_DEBUG=warn DXVK_NVAPI_DRIVER_VERSION=62070 PROTON_ENABLE_NVAPI=1 PROTON_ENABLE_NGX_UPDATER=1 VKD3D_CONFIG=dxr,dxr11 WINEDLLOVERRIDES="dxgi=n,b;cabinet=n,b;d3dcompiler_47=n,b;msdmo=n,b;nvngx=n,b" %command% -nobattleye
 ```
 
-> **Hinweis zu `WINEDLLOVERRIDES`:**
-> - `dxgi=n,b` lädt ReShade (`dxgi.dll`)
-> - `cabinet=n,b` lädt unseren `cabinet.dll`-Proxy für `AuraV.bank`
-> - `msdmo=n,b` lädt den ASI-Loader von AuraV
-> - `d3dcompiler_47=n,b` & `nvngx=n,b` sorgen für Shader-Kompilierung und DLSS/Streamline
+> **What `WINEDLLOVERRIDES` does:**
+> - `dxgi=n,b` loads ReShade (`dxgi.dll`)
+> - `cabinet=n,b` loads our custom `cabinet.dll` proxy for `AuraV.bank`
+> - `msdmo=n,b` loads AuraV's ASI loader
+> - `d3dcompiler_47=n,b` & `nvngx=n,b` enable shader compilation and DLSS/Streamline
 
-*(Falls du ein detailliertes Wine-Log für die Fehlersuche brauchst, kannst du temporär `PROTON_LOG=1` voranstellen – im Normalbetrieb weglassen, da das Log sehr groß wird.)*
+*(For debugging, you can temporarily prepend `PROTON_LOG=1` to generate `~/steam-3240220.log`; omit it during normal play to avoid large log files.)*
 
 ---
 
-## Empfohlene Einstellungen (RTX 4090 @ 2560×1440)
+## Recommended Settings (RTX 4090 @ 2560×1440)
 
-### GTA V Grafikmenü
-- **NVIDIA DLSS:** `Quality` (oder `Balanced` für mehr FPS)
-- **Raytracing (GI, Reflections, Shadows):** `An`
+### GTA V In-Game Graphics
+- **NVIDIA DLSS:** `Quality` (or `Balanced` for extra headroom)
+- **Ray Tracing (GI, Reflections, Shadows):** `On`
 
 ### AuraV (`F10` / `AuraV/AuraV.ini`)
-- `denoiser=1` (Ray Reconstruction), `restir=1`, `restir_gi=1`, `radiance_cache=1` **anlassen**.
-- Falls die FPS zusammen mit DLSS 5 zu stark sinken: `rays_per_pixel=1` und `bounces=2` setzen (großer FPS-Gewinn bei nahezu gleicher Optik).
+- Keep `denoiser=1` (Ray Reconstruction), `restir=1`, `restir_gi=1`, and `radiance_cache=1` **enabled**.
+- If FPS with DLSS 5 on top is too low, reduce `rays_per_pixel=1` and `bounces=2` for a significant FPS boost with minimal visual loss.
 
-### ReShade (`Einfg`) & DLSS 5 Neural Rendering
-- **ReShade `Start`-Tab (`.fx`-Shader):** Alles **ausgeschaltet lassen**! Shader wie `SSR`, `RadiantGI`, `MXAO` oder `Bloom` würden nur FPS kosten und AuraVs natives Path Tracing verfälschen.
-- **Reiter `DLSS 5 Neural Rendering`:**
-  - **Ansatzpunkt:** `Nach Upscaling`
-  - **HDR-Modus:** `Auto (empfohlen)`
-  - **Durchläufe (`NRPasses`):** `1`
-  - **Unabhängige Haut (`NRSkinIndependent`):** `An`
-  - **UI-Korrektur (`NRUICorrection`):** `Aus`
-  - **Detailstabilität (`NRDetailStability`):** `Immer` (oder `Auto (empfohlen)`)
-  - **Lokaler Ton / Struktur & Änderungsstärke:** Bei Path Tracing oft zwischen `0.65` und `0.85` natürlicher als `1.00`.
-  - Mit **F6** lässt sich DLSS 5 jederzeit live im Spiel an- und ausschalten.
+### ReShade (`Insert`) & DLSS 5 Neural Rendering
+- **ReShade `Home` tab (`.fx` shaders):** Leave **everything disabled**! Effects like `SSR`, `RadiantGI`, `MXAO`, or `Bloom` waste FPS and conflict with AuraV's native path tracing.
+- **`DLSS 5 Neural Rendering` tab:**
+  - **Hook Point (`Ansatzpunkt`):** `Post Upscaling` (`Nach Upscaling`)
+  - **HDR Mode:** `Auto (recommended)`
+  - **Passes (`NRPasses`):** `1`
+  - **Independent Skin (`NRSkinIndependent`):** `On`
+  - **UI Correction (`NRUICorrection`):** `Off`
+  - **Detail Stability (`NRDetailStability`):** `Always` (`Immer`) or `Auto (recommended)`
+  - **Local Tone / Structure & Strength:** Values around `0.65 – 0.85` often look more natural with path tracing than `1.00`.
+  - Press **F6** in-game anytime to toggle DLSS 5 on/off for live A/B comparison.
 
 ---
 
-## Fehlerbehebung
+## Troubleshooting
 
-- **AuraV startet kein Path Tracing (`AuraV/AuraV.log` -> `path tracing failed to start`):**
-  - Prüfen, ob im GTA-V-Menü *NVIDIA DLSS* und *Raytracing* aktiviert sind.
-  - Prüfen, ob `VKD3D_CONFIG=dxr,dxr11` und `DXVK_NVAPI_DRIVER_VERSION=62070` gesetzt sind.
-  - Prüfen, ob `nvngx_dlssd.dll` aus dem AuraV-Archiv stammt.
-- **F10 öffnet nur den Mauszeiger oder Absturz beim Welt-Load:**
-  - Prüfen, ob `cabinet=n,b` in `WINEDLLOVERRIDES` steht und `cabinet.dll` aus diesem Repo neben `GTA5_Enhanced.exe` liegt.
-  - Zum Debuggen `cabinet.dll` mit `DEBUG_LOG=1 ./build.sh` bauen und `cabinet_proxy.log` im Spielverzeichnis prüfen.
-- **ReShade zeigt „NR-Laufzeit nicht installiert“:**
-  - `nvngx_dlssnr.dll` fehlt neben `GTA5_Enhanced.exe` / `renodx-dlss5.addon64`.
-- **ReShade öffnet sich nicht (`Einfg`):**
-  - Prüfen, ob `dxgi=n,b` in `WINEDLLOVERRIDES` steht und `ReShade.log` im Spielverzeichnis prüfen.
+- **AuraV fails to start path tracing (`AuraV/AuraV.log` -> `path tracing failed to start`):**
+  - Verify *NVIDIA DLSS* and *Ray Tracing* are enabled in GTA V's Graphics menu.
+  - Verify `VKD3D_CONFIG=dxr,dxr11` and `DXVK_NVAPI_DRIVER_VERSION=62070` are set in Steam launch options.
+  - Ensure `nvngx_dlssd.dll` is the original file from the AuraV archive.
+- **Pressing F10 only shows a mouse cursor, or game crashes on world load:**
+  - Ensure `cabinet=n,b` is in `WINEDLLOVERRIDES` and `cabinet.dll` from this repo is next to `GTA5_Enhanced.exe`.
+  - Rebuild with `DEBUG_LOG=1 ./build.sh` and inspect `cabinet_proxy.log` in the game folder.
+- **ReShade says "NR runtime not installed":**
+  - `nvngx_dlssnr.dll` is missing next to `GTA5_Enhanced.exe` / `renodx-dlss5.addon64`.
+- **ReShade overlay doesn't open (`Insert`):**
+  - Ensure `dxgi=n,b` is in `WINEDLLOVERRIDES` and check `ReShade.log` in the game folder.
