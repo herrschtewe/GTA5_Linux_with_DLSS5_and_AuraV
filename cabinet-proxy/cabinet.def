@@ -1,0 +1,19 @@
+LIBRARY "cabinet.dll"
+EXPORTS
+    DeleteExtractedFiles = cabinet.DeleteExtractedFiles @4
+    DllGetVersion = cabinet.DllGetVersion @2
+    Extract = cabinet.Extract @3
+    FCIAddFile = cabinet.FCIAddFile @11
+    FCICreate = cabinet.FCICreate @10
+    FCIDestroy = cabinet.FCIDestroy @14
+    FCIFlushCabinet = cabinet.FCIFlushCabinet @13
+    FCIFlushFolder = cabinet.FCIFlushFolder @12
+    FDICopy = cabinet.FDICopy @22
+    FDICreate = cabinet.FDICreate @20
+    FDIDestroy = cabinet.FDIDestroy @23
+    FDIIsCabinet = cabinet.FDIIsCabinet @21
+    FDITruncateCabinet = cabinet.FDITruncateCabinet @24
+    GetDllVersion = cabinet.GetDllVersion @1
+    CreateDecompressor @40
+    Decompress @43
+    CloseDecompressor @45
